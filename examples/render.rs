@@ -1,5 +1,8 @@
 use nalgebra_glm as glm;
-use std::iter;
+use std::{
+    iter,
+    time::{Duration, Instant},
+};
 use wgpu::util::DeviceExt;
 use winit::{
     event::*,
@@ -294,6 +297,9 @@ pub async fn run_app(app_name: &str) {
             .expect("Couldn't append canvas to document body.")
     }
     let mut state = State::new(&window).await;
+    let start = Instant::now();
+    let mut next_report = start + Duration::from_secs(1);
+    let mut frame_count: u32 = 0;
     event_loop.run(move |event, _, control_flow| {
         control_flow.set_wait();
         match event {
@@ -332,6 +338,13 @@ pub async fn run_app(app_name: &str) {
                     }
                     Err(wgpu::SurfaceError::OutOfMemory) => control_flow.set_exit(),
                     Err(wgpu::SurfaceError::Timeout) => tracing::warn!("surface timeout"),
+                }
+                frame_count += 1;
+                let now = Instant::now();
+                if now >= next_report {
+                    println!("{} FPS", frame_count);
+                    frame_count = 0;
+                    next_report = now + Duration::from_secs(1);
                 }
             }
             Event::MainEventsCleared => {
